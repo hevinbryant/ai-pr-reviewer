@@ -1,0 +1,74 @@
+name: "AI PR Reviewer"
+description: "Automatically review pull requests using AI (OpenAI or Anthropic)"
+author: "hevinbryant"
+
+branding:
+  icon: "eye"
+  color: "purple"
+
+# ── Inputs ─────────────────────────────────────────────────────────────────────
+inputs:
+  github_token:
+    description: "GitHub token for reading PR diffs and posting comments"
+    required: true
+
+  provider:
+    description: "AI provider: openai or anthropic"
+    required: false
+    default: "openai"
+
+  openai_api_key:
+    description: "OpenAI API key (required when provider is openai)"
+    required: false
+    default: ""
+
+  anthropic_api_key:
+    description: "Anthropic API key (required when provider is anthropic)"
+    required: false
+    default: ""
+
+  model:
+    description: "Model override. Defaults: gpt-4o (openai), claude-sonnet-4-20250514 (anthropic)"
+    required: false
+    default: ""
+
+  language:
+    description: "Review language: en (English) or zh (Chinese)"
+    required: false
+    default: "en"
+
+  max_files:
+    description: "Maximum number of changed files to review (to control cost)"
+    required: false
+    default: "10"
+
+  exclude_patterns:
+    description: "Comma-separated filename patterns to skip (e.g. '*.lock,*.min.js')"
+    required: false
+    default: "*.lock,*-lock.json,*.min.js,*.min.css"
+
+# ── Execution ──────────────────────────────────────────────────────────────────
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      shell: bash
+      run: pip install -r ${{ github.action_path }}/requirements.txt --quiet
+
+    - name: Run AI review
+      shell: bash
+      run: python ${{ github.action_path }}/src/main.py
+      env:
+        GITHUB_TOKEN:        ${{ inputs.github_token }}
+        OPENAI_API_KEY:      ${{ inputs.openai_api_key }}
+        ANTHROPIC_API_KEY:   ${{ inputs.anthropic_api_key }}
+        AI_PROVIDER:         ${{ inputs.provider }}
+        AI_MODEL:            ${{ inputs.model }}
+        REVIEW_LANGUAGE:     ${{ inputs.language }}
+        MAX_FILES:           ${{ inputs.max_files }}
+        EXCLUDE_PATTERNS:    ${{ inputs.exclude_patterns }}
